@@ -1,19 +1,19 @@
 ﻿using KerboKatz.Classes;
 using System;
 using System.Collections.Generic;
-//using UnityEngine;
+using UnityEngine;
 
 namespace KerboKatz
 {
   [KSPAddon(KSPAddon.Startup.TrackingStation, false)]
-  public partial class RecoverAll : KerboKatzBase
+  public partial class DestroyAll : KerboKatzBase
   {
     public Dictionary<string, int> experimentCount               = new Dictionary<string, int>();
-    public List<vesselInfo> vesselsToRecover                     = new List<vesselInfo>();
+    public List<vesselInfo> vesselsToDestroy                     = new List<vesselInfo>();
     public Dictionary<VesselType, vesselTypes> vesselTypesToShow = new Dictionary<VesselType, vesselTypes>();
-    public RecoverAll()
+    public DestroyAll()
     {
-      modName = "RecoverAll";
+      modName = "DestroyAll";
       requiresUtilities = new Version(1, 1, 0);
     }
 
@@ -28,16 +28,23 @@ namespace KerboKatz
       var vesselTypes = Utilities.GetValues<VesselType>();
       foreach (var type in vesselTypes)
       {
+        /*if (type == VesselType.Unknown ||
+            type == VesselType.SpaceObject)
+          continue;*/
         string name = type.ToString();
-        currentSettings.setDefault(name, "true");
-        vesselTypesToShow.Add(type, new vesselTypes(type, name, currentSettings.getBool(name), this.updateRecoverList));
+        
+        if (type == VesselType.Debris)
+          currentSettings.setDefault(name, "true");
+        else
+          currentSettings.setDefault(name, "false");
+        vesselTypesToShow.Add(type, new vesselTypes(type, name, currentSettings.getBool(name), this.updateDestroyList));
       }
     }
 
     public override void OnGuiAppLauncherReady()
     {
       base.OnGuiAppLauncherReady();
-      button.Setup(toggleWindow, toggleWindow, Utilities.getTexture("icon", "RecoverAll/Textures"));
+      button.Setup(toggleWindow, toggleWindow, Utilities.getTexture("icon", "DestroyAll/Textures"));
       button.VisibleInScenes = ApplicationLauncher.AppScenes.TRACKSTATION;
     }
 
@@ -50,7 +57,7 @@ namespace KerboKatz
       }
       else
       {
-        updateRecoverList();
+        updateDestroyList();
         currentSettings.set("showWindow", true);
       }
     }
@@ -80,68 +87,51 @@ namespace KerboKatz
       }
     }
 
-    private void updateRecoverList()
+    private void updateDestroyList()
     {
       clearLists();
       var vessels = FlightGlobals.Vessels;
       foreach (var vessel in vessels)
       {
-        if (!isRecoverable(vessel))
+        if (!isDestroyable(vessel))
         {
           continue;
         }
-        Utilities.RecoverAll.addVesselInfo(vessel,ref experimentCount,ref vesselsToRecover);
+        Utilities.RecoverAll.addVesselInfo(vessel, ref experimentCount, ref vesselsToDestroy,true);
       }
     }
 
     private void clearLists()
     {
-      vesselsToRecover.Clear();
+      vesselsToDestroy.Clear();
       experimentCount.Clear();
     }
 
-    private bool isRecoverable(Vessel vessel)
+    private bool isDestroyable(Vessel vessel)
     {
-      if (vessel.mainBody != Planetarium.fetch.Sun.orbitingBodies[2] ||
-        (!vessel.Landed &&
-         !vessel.Splashed) ||
-         (vessel.situation == Vessel.Situations.PRELAUNCH &&
-         !currentSettings.getBool("includePrelaunch")) ||
-         !vesselTypesToShow[vessel.vesselType].show)
+      if (!vesselTypesToShow[vessel.vesselType].show)
       {
         return false;
       }
       return true;
-    }
-    private void recoverVessels()
+    } 
+    private void destroyVessels()
     {
-      foreach (var currentVessel in vesselsToRecover)
+      foreach (var currentVessel in vesselsToDestroy)
       {
-        if (!currentVessel.importantInfo.recover || currentVessel.importantInfo.vessel == null || !isRecoverable(currentVessel.importantInfo.vessel))
+        if (!currentVessel.importantInfo.recover || currentVessel.importantInfo.vessel == null || !isDestroyable(currentVessel.importantInfo.vessel))
         {
           continue;
         }
-        foreach (var currentScience in currentVessel.scienceInfo)
-        {
-          ResearchAndDevelopment.Instance.SubmitScienceData(currentScience.data, currentScience.subject);
-        }
         foreach (var currentCrew in currentVessel.crewInfo)
         {
-          currentCrew.rosterStatus = ProtoCrewMember.RosterStatus.Available;
+          currentCrew.rosterStatus = ProtoCrewMember.RosterStatus.Dead;
         }
-
-        Utilities.Funding.addFunds(currentVessel.importantInfo.totalCost * currentVessel.importantInfo.distanceModifier, TransactionReasons.VesselRecovery);
-        //set vessel type to debris so we dont get a reputation hit-- sadly doesnt work but do it anyways
-        //currentVessel.importantInfo.vessel.vesselType = VesselType.Debris;
-
         HighLogic.CurrentGame.flightState.protoVessels.Remove(currentVessel.importantInfo.vessel.protoVessel);
-        //currentVessel.importantInfo.vessel.Die();
-        currentVessel.importantInfo.vessel.OnDestroy();
+        currentVessel.importantInfo.vessel.Die();
         Destroy(currentVessel.importantInfo.vessel);
-        //workaround the reputation hit by adding it back still losing reputation but not as bad :)
-        //Reputation.Instance.AddReputation(1, TransactionReasons.VesselRecovery);
       }
-      updateRecoverList();
+      updateDestroyList();
     }
   }
 }

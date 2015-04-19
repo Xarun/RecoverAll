@@ -1,10 +1,11 @@
 ﻿using KerboKatz.Classes;
 using System.Collections.Generic;
 using UnityEngine;
+using KerboKatz;
 
 namespace KerboKatz
 {
-  public partial class RecoverAll : KerboKatzBase
+  public partial class DestroyAll : KerboKatzBase
   {
     private bool initStyle;
     private GUIStyle areaStyle;
@@ -14,19 +15,19 @@ namespace KerboKatz
     private GUIStyle settingsWindowStyle;
     private GUIStyle textStyle;
     private GUIStyle textStyleShort;
-    private GUIStyle textStyleShorter;
     private GUIStyle textStyleVesselHeader;
     private GUIStyle toggleStyle;
     private GUIStyle tooltipStyle;
     private GUIStyle verticalToolbar;
     private GUIStyle windowStyle;
-    private int mainWindowID                                             = 971300;
-    private int settingsWindowID = 971301;
+    private int mainWindowID                                             = 971302;
+    private int settingsWindowID                                         = 971303;
     private List<alignedTooltip> tooltipList = new List<alignedTooltip>();
     private Rect mainWindowRect                                          = new Rect();
     private Rect settingsWindowRect                                      = new Rect();
     private Vector2 mainWindowScroll                                     = new Vector2();
-
+    private GUIStyle textStyleShorter;
+    private Dictionary<Vessel.Situations,string> situations   = new Dictionary<Vessel.Situations,string>();
     private void InitStyle()
     {
       windowStyle = new GUIStyle(HighLogic.Skin.window);
@@ -43,13 +44,15 @@ namespace KerboKatz
       textStyleVesselHeader            = new GUIStyle(textStyle);
       textStyleVesselHeader.fixedWidth = 232;
       textStyleVesselHeader.alignment  = TextAnchor.MiddleCenter;
+      textStyleVesselHeader.padding.right = 0;
 
       textStyleShort                   = new GUIStyle(textStyle);
-      textStyleShort.fixedWidth        = 73;
-      textStyleShort.alignment         = TextAnchor.MiddleRight;
+      textStyleShort.fixedWidth        = 90;
+      textStyleShort.alignment = TextAnchor.MiddleRight;
 
-      textStyleShorter                 = new GUIStyle(textStyleShort);
-      textStyleShorter.fixedWidth      = 50;
+      textStyleShorter            = new GUIStyle(textStyleShort);
+      textStyleShorter.fixedWidth = 50;
+
 
       numberFieldStyle                 = new GUIStyle(HighLogic.Skin.box);
       numberFieldStyle.fixedWidth      = 52;
@@ -78,9 +81,16 @@ namespace KerboKatz
 
       if (tooltipStyle == null)
       {
-        tooltipStyle = new GUIStyle(Utilities.UI.getTooltipStyle());
-        tooltipStyle.stretchWidth = true;
+        tooltipStyle                 = new GUIStyle(Utilities.UI.getTooltipStyle());
+        tooltipStyle.stretchWidth    = true;
       }
+      situations.Add(Vessel.Situations.DOCKED, "Docked.");
+      situations.Add(Vessel.Situations.FLYING, "Flying.");
+      situations.Add(Vessel.Situations.LANDED, "Landed.");
+      situations.Add(Vessel.Situations.ORBITING, "Orbiting.");
+      situations.Add(Vessel.Situations.PRELAUNCH, "Awaiting to launch.");
+      situations.Add(Vessel.Situations.SPLASHED, "Splashed down.");
+      situations.Add(Vessel.Situations.SUB_ORBITAL, "Sub orbital trajectory.");
 
       initStyle = true;
     }
@@ -91,8 +101,8 @@ namespace KerboKatz
       {
         if (!initStyle)
           InitStyle();
-        Utilities.UI.createWindow(currentSettings.getBool("showWindow"), mainWindowID, ref mainWindowRect, mainWindow, "Recover All", windowStyle);
-        Utilities.UI.createWindow(currentSettings.getBool("showSettings"), settingsWindowID, ref settingsWindowRect, settingsWindow, "Recover All Settings", settingsWindowStyle);
+        Utilities.UI.createWindow(currentSettings.getBool("showWindow"), mainWindowID, ref mainWindowRect, mainWindow, "Destroy All", windowStyle);
+        Utilities.UI.createWindow(currentSettings.getBool("showSettings"), settingsWindowID, ref settingsWindowRect, settingsWindow, "Destroy All Settings", settingsWindowStyle);
         Utilities.UI.showTooltip(tooltipStyle);
       }
     }
@@ -105,13 +115,6 @@ namespace KerboKatz
         var current = currentDic.Value;
         current.show = GUILayout.Toggle(current.show, current.name, HighLogic.Skin.toggle);
       }
-      var oldValue = currentSettings.getBool("includePrelaunch");
-      var newValue = Utilities.UI.createToggle("Include prelaunch", oldValue, HighLogic.Skin.toggle, "If you enable this option vessels that arent launched, or are in a prelaunch state, will be ignored.");
-      currentSettings.set("includePrelaunch", newValue);
-      if (oldValue != newValue)
-      {
-        updateRecoverList();
-      }
       GUILayout.EndVertical();
       Utilities.UI.updateTooltipAndDrag();
     }
@@ -119,9 +122,9 @@ namespace KerboKatz
     private void mainWindow(int windowID)
     {
       createVesselInfoHeader();
-      //mainWindowScroll = GUILayout.BeginScrollView(mainWindowScroll, false, true, GUIStyle.none, GUI.skin.verticalScrollbar, HighLogic.Skin.textArea, GUILayout.Width(590), GUILayout.Height(380));//420
+      Utilities.UI.updateTooltipAndDrag(tooltipStyle,200,false);
       mainWindowScroll = Utilities.UI.beginScrollView(mainWindowScroll, 590, 380, false, true, GUIStyle.none, GUI.skin.verticalScrollbar, HighLogic.Skin.textArea);
-      foreach (var currentVessel in vesselsToRecover)
+      foreach (var currentVessel in vesselsToDestroy)
       {
         createVesselInfoLayout(currentVessel, currentVessel.partTooltip, currentVessel.scienceTooltip, currentVessel.crewTooltip);
       }
@@ -129,9 +132,9 @@ namespace KerboKatz
       GUILayout.BeginHorizontal();
       GUILayout.Space(buttonStyle.fixedWidth);
       GUILayout.FlexibleSpace();
-      if (Utilities.UI.createButton("Recover all Vessels", buttonStyle))
+      if (Utilities.UI.createButton("Destroy all Vessels", buttonStyle))
       {
-        recoverVessels();
+        destroyVessels();
       }
       GUILayout.FlexibleSpace();
       if (Utilities.UI.createButton("Settings", buttonStyle))
@@ -148,20 +151,15 @@ namespace KerboKatz
       GUILayout.BeginVertical();
       GUILayout.BeginHorizontal(areaStyleHeader);
       Utilities.UI.createLabel("Vessel name", textStyleVesselHeader);
+      Utilities.UI.createLabel("Main body", textStyleShort, "Main body and state of this vessel.");
       //part funds and tooltip
-      Utilities.UI.createLabel("Vessel cost", textStyleShort, "Funding that you will get by recovering this vessel.");
+      Utilities.UI.createLabel("Vessel cost", textStyleShort, "Funding that you will lose by destroying this vessel.");
       //science value and tooltip
-      Utilities.UI.createLabel("Science", textStyleShort, "Science experiments that will be completed. This value is estimated. Real values may be lower/higher.");
+      Utilities.UI.createLabel("Science", textStyleShorter, "Science experiments that will be lost. This value is estimated. Real values may be lower/higher.");
       //crew members and tooltip
-      Utilities.UI.createLabel("Crew", textStyleShorter, "Crew members that will be available again.");
-      Utilities.UI.createLabel("Rate", textStyleShort, "Recovery rate depends on the distance to the KSC.");
+      Utilities.UI.createLabel("Crew", textStyleShorter, "Crew members that will die when you destroy this vessel.");
       GUILayout.EndHorizontal();
     }
-
-    /*private void createVesselInfo(vesselInfo currentVessel)
-    {
-      createVesselInfoLayout(currentVessel, currentVessel.partTooltip, currentVessel.scienceTooltip, currentVessel.crewTooltip);
-    }*/
 
     private void createVesselInfoLayout(vesselInfo currentVessel, string partString, string scienceString, string crewString)
     {
@@ -175,14 +173,13 @@ namespace KerboKatz
         currentVessel.importantInfo.recover = false;
       }
       Utilities.UI.createLabel(currentVessel.importantInfo.vesselName, textStyle);
+      Utilities.UI.createLabel(currentVessel.importantInfo.vessel.mainBody.name, textStyleShort, situations[currentVessel.importantInfo.vessel.situation]);
       //part funds and tooltip
-      Utilities.UI.createLabel((currentVessel.importantInfo.totalCost * currentVessel.importantInfo.distanceModifier).ToString("N2"), textStyleShort, partString);
+      Utilities.UI.createLabel((currentVessel.importantInfo.totalCost).ToString("N2"), textStyleShort, partString);
       //science value and tooltip
-      Utilities.UI.createLabel(currentVessel.importantInfo.totalScience.ToString("N2"), textStyleShort, scienceString);
+      Utilities.UI.createLabel(currentVessel.importantInfo.totalScience.ToString("N2"), textStyleShorter, scienceString);
       //crew members and tooltip
       Utilities.UI.createLabel(currentVessel.importantInfo.crewCount.ToString("N0"), textStyleShorter, crewString);
-      //crew members and tooltip
-      Utilities.UI.createLabel((currentVessel.importantInfo.distanceModifier * 100).ToString("N2") + "%", textStyleShort);
       GUILayout.EndHorizontal();
     }
 

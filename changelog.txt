@@ -1,2 +1,9 @@
+v 1.1.0
+ * Added:
+  * Tooltips now include resources
+  * DestroyAll
+ * Misc
+  * UI performance improvments
+	* Tooltips for parts are now grouped by type&price
 v 1.0.0
  * Initial release
