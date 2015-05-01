@@ -1,4 +1,5 @@
 ﻿using KerboKatz.Classes;
+using KerboKatz.Extensions;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -20,61 +21,61 @@ namespace KerboKatz
     private GUIStyle tooltipStyle;
     private GUIStyle verticalToolbar;
     private GUIStyle windowStyle;
-    private int mainWindowID                                             = 971300;
+    private int mainWindowID = 971300;
     private int settingsWindowID = 971301;
     private List<alignedTooltip> tooltipList = new List<alignedTooltip>();
-    private Rect mainWindowRect                                          = new Rect();
-    private Rect settingsWindowRect                                      = new Rect();
-    private Vector2 mainWindowScroll                                     = new Vector2();
+    private Rectangle mainWindowRect = new Rectangle(Rectangle.updateType.Center);
+    private Rectangle settingsWindowRect = new Rectangle(Rectangle.updateType.Cursor);
+    private Vector2 mainWindowScroll = new Vector2();
 
     private void InitStyle()
     {
       windowStyle = new GUIStyle(HighLogic.Skin.window);
       windowStyle.fixedWidth = 600;
-      windowStyle.padding.left         = 0;
+      windowStyle.padding.left = 0;
 
-      settingsWindowStyle              = new GUIStyle(HighLogic.Skin.window);
-      settingsWindowStyle.fixedWidth   = 200;
+      settingsWindowStyle = new GUIStyle(HighLogic.Skin.window);
+      settingsWindowStyle.fixedWidth = 200;
 
-      textStyle                        = new GUIStyle(HighLogic.Skin.label);
-      textStyle.fixedWidth             = 200;
-      textStyle.margin.left            = 10;
+      textStyle = new GUIStyle(HighLogic.Skin.label);
+      textStyle.fixedWidth = 200;
+      textStyle.margin.left = 10;
 
-      textStyleVesselHeader            = new GUIStyle(textStyle);
+      textStyleVesselHeader = new GUIStyle(textStyle);
       textStyleVesselHeader.fixedWidth = 232;
-      textStyleVesselHeader.alignment  = TextAnchor.MiddleCenter;
+      textStyleVesselHeader.alignment = TextAnchor.MiddleCenter;
 
-      textStyleShort                   = new GUIStyle(textStyle);
-      textStyleShort.fixedWidth        = 73;
-      textStyleShort.alignment         = TextAnchor.MiddleRight;
+      textStyleShort = new GUIStyle(textStyle);
+      textStyleShort.fixedWidth = 73;
+      textStyleShort.alignment = TextAnchor.MiddleRight;
 
-      textStyleShorter                 = new GUIStyle(textStyleShort);
-      textStyleShorter.fixedWidth      = 50;
+      textStyleShorter = new GUIStyle(textStyleShort);
+      textStyleShorter.fixedWidth = 50;
 
-      numberFieldStyle                 = new GUIStyle(HighLogic.Skin.box);
-      numberFieldStyle.fixedWidth      = 52;
-      numberFieldStyle.fixedHeight     = 22;
-      numberFieldStyle.alignment       = TextAnchor.MiddleCenter;
-      numberFieldStyle.padding.right   = 7;
-      numberFieldStyle.margin.top      = 5;
+      numberFieldStyle = new GUIStyle(HighLogic.Skin.box);
+      numberFieldStyle.fixedWidth = 52;
+      numberFieldStyle.fixedHeight = 22;
+      numberFieldStyle.alignment = TextAnchor.MiddleCenter;
+      numberFieldStyle.padding.right = 7;
+      numberFieldStyle.margin.top = 5;
 
-      buttonStyle                      = new GUIStyle(HighLogic.Skin.button);
-      buttonStyle.fixedWidth           = 150;
+      buttonStyle = new GUIStyle(HighLogic.Skin.button);
+      buttonStyle.fixedWidth = 150;
 
-      toggleStyle                      = new GUIStyle(HighLogic.Skin.toggle);
-      toggleStyle.fixedWidth           = 20;
-      toggleStyle.fixedHeight          = 20;
+      toggleStyle = new GUIStyle(HighLogic.Skin.toggle);
+      toggleStyle.fixedWidth = 20;
+      toggleStyle.fixedHeight = 20;
 
-      areaStyle                        = new GUIStyle(HighLogic.Skin.button);
-      areaStyle.fixedWidth             = 560;
-      areaStyle.onHover                = areaStyle.normal;
-      areaStyle.hover                  = areaStyle.normal;
+      areaStyle = new GUIStyle(HighLogic.Skin.button);
+      areaStyle.fixedWidth = 560;
+      areaStyle.onHover = areaStyle.normal;
+      areaStyle.hover = areaStyle.normal;
 
-      areaStyleHeader                  = new GUIStyle(areaStyle);
-      areaStyleHeader.fixedWidth       = 590;
+      areaStyleHeader = new GUIStyle(areaStyle);
+      areaStyleHeader.fixedWidth = 590;
 
-      verticalToolbar                  = new GUIStyle(GUI.skin.verticalScrollbar);
-      verticalToolbar.fixedHeight      = 370;
+      verticalToolbar = new GUIStyle(GUI.skin.verticalScrollbar);
+      verticalToolbar.fixedHeight = 370;
 
       if (tooltipStyle == null)
       {
@@ -119,7 +120,6 @@ namespace KerboKatz
     private void mainWindow(int windowID)
     {
       createVesselInfoHeader();
-      //mainWindowScroll = GUILayout.BeginScrollView(mainWindowScroll, false, true, GUIStyle.none, GUI.skin.verticalScrollbar, HighLogic.Skin.textArea, GUILayout.Width(590), GUILayout.Height(380));//420
       mainWindowScroll = Utilities.UI.beginScrollView(mainWindowScroll, 590, 380, false, true, GUIStyle.none, GUI.skin.verticalScrollbar, HighLogic.Skin.textArea);
       foreach (var currentVessel in vesselsToRecover)
       {
@@ -140,7 +140,7 @@ namespace KerboKatz
       }
       GUILayout.EndHorizontal();
       GUILayout.EndVertical();
-      Utilities.UI.updateTooltipAndDrag(tooltipStyle,500);
+      Utilities.UI.updateTooltipAndDrag(tooltipStyle, 500);
     }
 
     private void createVesselInfoHeader()
@@ -157,11 +157,6 @@ namespace KerboKatz
       Utilities.UI.createLabel("Rate", textStyleShort, "Recovery rate depends on the distance to the KSC.");
       GUILayout.EndHorizontal();
     }
-
-    /*private void createVesselInfo(vesselInfo currentVessel)
-    {
-      createVesselInfoLayout(currentVessel, currentVessel.partTooltip, currentVessel.scienceTooltip, currentVessel.crewTooltip);
-    }*/
 
     private void createVesselInfoLayout(vesselInfo currentVessel, string partString, string scienceString, string crewString)
     {

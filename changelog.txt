@@ -1,3 +1,7 @@
+v 1.2
+ * Misc:
+  * KSP 1.0 recompile
+  * Moved DestroyAll folder into RecoverAll folder
 v 1.1.0
  * Added:
   * Tooltips now include resources

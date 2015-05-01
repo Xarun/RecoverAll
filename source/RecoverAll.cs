@@ -1,27 +1,25 @@
 ﻿using KerboKatz.Classes;
 using System;
 using System.Collections.Generic;
-//using UnityEngine;
 
 namespace KerboKatz
 {
   [KSPAddon(KSPAddon.Startup.TrackingStation, false)]
   public partial class RecoverAll : KerboKatzBase
   {
-    public Dictionary<string, int> experimentCount               = new Dictionary<string, int>();
-    public List<vesselInfo> vesselsToRecover                     = new List<vesselInfo>();
+    public Dictionary<string, int> experimentCount = new Dictionary<string, int>();
+    public List<vesselInfo> vesselsToRecover = new List<vesselInfo>();
     public Dictionary<VesselType, vesselTypes> vesselTypesToShow = new Dictionary<VesselType, vesselTypes>();
     public RecoverAll()
     {
       modName = "RecoverAll";
-      requiresUtilities = new Version(1, 1, 0);
+      requiresUtilities = new Version(1, 2, 0);
     }
 
-    public override void Start()
+    protected override void Started()
     {
-      base.Start();
-      mainWindowRect.x     = currentSettings.getFloat("mainWindowRectX");
-      mainWindowRect.y     = currentSettings.getFloat("mainWindowRectY");
+      mainWindowRect.x = currentSettings.getFloat("mainWindowRectX");
+      mainWindowRect.y = currentSettings.getFloat("mainWindowRectY");
       settingsWindowRect.x = currentSettings.getFloat("settingsWindowRectX");
       settingsWindowRect.y = currentSettings.getFloat("settingsWindowRectY");
 
@@ -32,16 +30,11 @@ namespace KerboKatz
         currentSettings.setDefault(name, "true");
         vesselTypesToShow.Add(type, new vesselTypes(type, name, currentSettings.getBool(name), this.updateRecoverList));
       }
+      setIcon(Utilities.getTexture("icon", "RecoverAll/Textures"));
+      setAppLauncherScenes(ApplicationLauncher.AppScenes.TRACKSTATION);
     }
 
-    public override void OnGuiAppLauncherReady()
-    {
-      base.OnGuiAppLauncherReady();
-      button.Setup(toggleWindow, toggleWindow, Utilities.getTexture("icon", "RecoverAll/Textures"));
-      button.VisibleInScenes = ApplicationLauncher.AppScenes.TRACKSTATION;
-    }
-
-    public void toggleWindow()
+    protected override void onToolbar()
     {
       if (currentSettings.getBool("showWindow"))
       {
@@ -55,7 +48,7 @@ namespace KerboKatz
       }
     }
 
-    public override void OnDestroy()
+    protected override void OnDestroy()
     {
       if (currentSettings != null)
       {
@@ -71,13 +64,8 @@ namespace KerboKatz
           var current = currentDic.Value;
           currentSettings.set(current.name, current.show);
         }
-        currentSettings.save();
       }
-      GameEvents.onGUIApplicationLauncherReady.Remove(OnGuiAppLauncherReady);
-      if (button != null)
-      {
-        ApplicationLauncher.Instance.RemoveModApplication(button);
-      }
+      base.OnDestroy();
     }
 
     private void updateRecoverList()
@@ -90,7 +78,7 @@ namespace KerboKatz
         {
           continue;
         }
-        Utilities.RecoverAll.addVesselInfo(vessel,ref experimentCount,ref vesselsToRecover);
+        Utilities.RecoverAll.addVesselInfo(vessel, ref experimentCount, ref vesselsToRecover);
       }
     }
 
@@ -113,6 +101,7 @@ namespace KerboKatz
       }
       return true;
     }
+
     private void recoverVessels()
     {
       foreach (var currentVessel in vesselsToRecover)
@@ -131,15 +120,9 @@ namespace KerboKatz
         }
 
         Utilities.Funding.addFunds(currentVessel.importantInfo.totalCost * currentVessel.importantInfo.distanceModifier, TransactionReasons.VesselRecovery);
-        //set vessel type to debris so we dont get a reputation hit-- sadly doesnt work but do it anyways
-        //currentVessel.importantInfo.vessel.vesselType = VesselType.Debris;
-
         HighLogic.CurrentGame.flightState.protoVessels.Remove(currentVessel.importantInfo.vessel.protoVessel);
-        //currentVessel.importantInfo.vessel.Die();
         currentVessel.importantInfo.vessel.OnDestroy();
         Destroy(currentVessel.importantInfo.vessel);
-        //workaround the reputation hit by adding it back still losing reputation but not as bad :)
-        //Reputation.Instance.AddReputation(1, TransactionReasons.VesselRecovery);
       }
       updateRecoverList();
     }
