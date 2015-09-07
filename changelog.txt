@@ -1,5 +1,7 @@
-v 1.2.1
+v 1.2.2
  * Fixed NullReferenceException in DestroyAll window that occured in rare circumstances
+v 1.2.1
+ * recompiled with ksp 1.0.1 and KerboKatzUtilities 1.2.1
 v 1.2
  * Misc:
   * KSP 1.0 recompile
