@@ -20,8 +20,8 @@ namespace KerboKatz
     private GUIStyle tooltipStyle;
     private GUIStyle verticalToolbar;
     private GUIStyle windowStyle;
-    private int mainWindowID = 971302;
-    private int settingsWindowID = 971303;
+    private static int mainWindowID = Utilities.UI.getNewWindowID;
+    private static int settingsWindowID = Utilities.UI.getNewWindowID;
     private List<alignedTooltip> tooltipList = new List<alignedTooltip>();
     private Rectangle mainWindowRect = new Rectangle(Rectangle.updateType.Center);
     private Rectangle settingsWindowRect = new Rectangle(Rectangle.updateType.Cursor);
@@ -172,7 +172,14 @@ namespace KerboKatz
         currentVessel.importantInfo.recover = false;
       }
       Utilities.UI.createLabel(currentVessel.importantInfo.vesselName, textStyle);
-      Utilities.UI.createLabel(currentVessel.importantInfo.vessel.mainBody.name, textStyleShort, situations[currentVessel.importantInfo.vessel.situation]);
+      if (situations.ContainsKey(currentVessel.importantInfo.vessel.situation)){
+        Utilities.UI.createLabel(currentVessel.importantInfo.vessel.mainBody.name, textStyleShort, situations[currentVessel.importantInfo.vessel.situation]);
+      }
+      else
+      {
+        Utilities.debug(modName, Utilities.LogMode.Error, "Situation not found: " + currentVessel.importantInfo.vessel.situation.ToString());
+        Utilities.UI.createLabel(currentVessel.importantInfo.vessel.mainBody.name, textStyleShort, "Unknown");
+      }
       //part funds and tooltip
       Utilities.UI.createLabel((currentVessel.importantInfo.totalCost).ToString("N2"), textStyleShort, partString);
       //science value and tooltip

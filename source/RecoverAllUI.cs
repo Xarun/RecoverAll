@@ -21,8 +21,8 @@ namespace KerboKatz
     private GUIStyle tooltipStyle;
     private GUIStyle verticalToolbar;
     private GUIStyle windowStyle;
-    private int mainWindowID = 971300;
-    private int settingsWindowID = 971301;
+    private static int mainWindowID = Utilities.UI.getNewWindowID;
+    private static int settingsWindowID = Utilities.UI.getNewWindowID;
     private List<alignedTooltip> tooltipList = new List<alignedTooltip>();
     private Rectangle mainWindowRect = new Rectangle(Rectangle.updateType.Center);
     private Rectangle settingsWindowRect = new Rectangle(Rectangle.updateType.Cursor);
